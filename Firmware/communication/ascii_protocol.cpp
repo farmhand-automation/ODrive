@@ -261,6 +261,43 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             axes[motor_number]->watchdog_feed();
         }
 
+    } else if (cmd[0] == 'd') {
+        uint8_t error_count[2] = {0, 0};
+
+        // Check for axis 0 errors
+        if(axes[0]->error_ != 0) error_count[0]++;
+        if(axes[0]->encoder_.error_ != 0) error_count[0]++;
+        if(axes[0]->motor_.error_ != 0) error_count[0]++;
+        if(axes[0]->controller_.error_ != 0) error_count[0]++;
+
+        // Check for axis 1 errors
+        if(axes[1]->error_ != 0) error_count[0]++;
+        if(axes[1]->encoder_.error_ != 0) error_count[0]++;
+        if(axes[1]->motor_.error_ != 0) error_count[0]++;
+        if(axes[1]->controller_.error_ != 0) error_count[0]++;
+
+        respond(response_channel, use_checksum, "%f,%f,%f,%u,%f,%f,%f,%u",
+            axes[0]->encoder_.pos_estimate_,
+            axes[0]->motor_.get_inverter_temp(),
+            axes[0]->motor_.current_control_.Iq_setpoint,
+            error_count[0],
+            axes[1]->encoder_.pos_estimate_,
+            axes[1]->motor_.get_inverter_temp(),
+            axes[1]->motor_.current_control_.Iq_setpoint,
+            error_count[1]
+        );
+    } else if(cmd[0] == 'e') {
+        // All of these error_ fields are enum constants which are ints by default
+        respond(response_channel, use_checksum, "%d,%d,%d,%d,%d,%d,%d,%d",
+            axes[0]->error_,
+            axes[0]->encoder_.error_,
+            axes[0]->motor_.error_,
+            axes[0]->controller_.error_,
+            axes[1]->error_,
+            axes[1]->encoder_.error_,
+            axes[1]->motor_.error_,
+            axes[1]->controller_.error_
+        );
     } else if (cmd[0] != 0) {
         respond(response_channel, use_checksum, "unknown command");
     }

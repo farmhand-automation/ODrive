@@ -271,22 +271,36 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         if(axes[0]->controller_.error_ != 0) error_count[0]++;
 
         // Check for axis 1 errors
-        if(axes[1]->error_ != 0) error_count[0]++;
-        if(axes[1]->encoder_.error_ != 0) error_count[0]++;
-        if(axes[1]->motor_.error_ != 0) error_count[0]++;
-        if(axes[1]->controller_.error_ != 0) error_count[0]++;
+        if(axes[1]->error_ != 0) error_count[1]++;
+        if(axes[1]->encoder_.error_ != 0) error_count[1]++;
+        if(axes[1]->motor_.error_ != 0) error_count[1]++;
+        if(axes[1]->controller_.error_ != 0) error_count[1]++;
 
-        respond(response_channel, use_checksum, "%f,%f,%f,%u,%f,%f,%f,%u",
-            axes[0]->encoder_.pos_estimate_,
-            axes[0]->motor_.get_inverter_temp(),
-            axes[0]->motor_.current_control_.Iq_setpoint,
+        respond(response_channel, use_checksum, "%.0f,%.1f,%.1f,%u,%.0f,%.1f,%.1f,%u",
+            (double)axes[0]->encoder_.pos_estimate_,
+            (double)axes[0]->motor_.get_inverter_temp(),
+            (double)axes[0]->motor_.current_control_.Iq_setpoint,
             error_count[0],
-            axes[1]->encoder_.pos_estimate_,
-            axes[1]->motor_.get_inverter_temp(),
-            axes[1]->motor_.current_control_.Iq_setpoint,
+            (double)axes[1]->encoder_.pos_estimate_,
+            (double)axes[1]->motor_.get_inverter_temp(),
+            (double)axes[1]->motor_.current_control_.Iq_setpoint,
             error_count[1]
         );
     } else if(cmd[0] == 'e') {
+        // Look for the clear parameter. e.g. "e 1"
+        int clear = 0;
+        int numscan = sscanf(cmd, "e %d", &clear);
+        if (numscan == 1 && clear == 1) {
+            axes[0]->error_ = (Axis::Error_t) 0;
+            axes[0]->encoder_.error_ = (Encoder::Error_t) 0;
+            axes[0]->motor_.error_ = (Motor::Error_t) 0;
+            axes[0]->controller_.error_ = (Controller::Error_t) 0;
+            axes[1]->error_ = (Axis::Error_t) 0;
+            axes[1]->encoder_.error_ = (Encoder::Error_t) 0;
+            axes[1]->motor_.error_ = (Motor::Error_t) 0;
+            axes[1]->controller_.error_ = (Controller::Error_t) 0;
+        }
+
         // All of these error_ fields are enum constants which are ints by default
         respond(response_channel, use_checksum, "%d,%d,%d,%d,%d,%d,%d,%d",
             axes[0]->error_,
